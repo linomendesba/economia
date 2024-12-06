@@ -4,78 +4,112 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Economia</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-      body {
-        background-color: #121212; /* Fundo preto suave */
-        color: #e0e0e0; /* Texto em cinza claro para contraste */
-        font-family: 'Arial', sans-serif;
-        text-align: center;
-        margin: 0;
-        padding: 20px;
-    }
-    
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        background-color: #1c1c1c; /* Fundo cinza escuro para o contêiner */
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); /* Sombra discreta */
-    }
-    
-    input, button {
-        padding: 10px 20px;
-        margin: 10px;
-        font-size: 16px;
-        border: 1px solid #333; /* Bordas discretas */
-        border-radius: 4px;
-        background-color: #2a2a2a; /* Fundo cinza médio */
-        color: #e0e0e0; /* Texto claro */
-    }
-    
-    button {
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    
-    button:hover {
-        background-color: #444; /* Fundo cinza mais claro ao passar o mouse */
-    }
-    
-    table {
-        margin: 20px auto;
-        border-collapse: collapse;
-        width: 100%;
-        background-color: #1c1c1c; /* Fundo da tabela */
-    }
-    
-    th, td {
-        border: 1px solid #333; /* Bordas escuras */
-        padding: 12px;
-        text-align: center;
-    }
-    
-    th {
-        background-color: #2a2a2a; /* Fundo mais escuro para o cabeçalho */
-        font-weight: bold;
-    }
-    
-    .actions {
-        margin-top: 20px;
-    }
-    
-    h1, h2 {
-        color: #ffffff; /* Títulos em branco para destaque */
-    }
-    
-    .total {
-      font-size: 20px;
-      margin-top: 20px;
-      font-weight: bold;
-      color: #ffc107; /* Amarelo */
-  }
-  
-    
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #1c1c1c;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        input, button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+        }
+
+        button {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 100%;
+            background-color: #1c1c1c;
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #2a2a2a;
+            font-weight: bold;
+        }
+
+        h1, h2 {
+            color: #ffffff;
+        }
+
+        .total {
+            font-size: 20px;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #ffc107;
+        }
+
+        .notificacao {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            font-size: 16px;
+        }
+
+        .meta-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .meta-progress {
+            width: 100%;
+            height: 30px;
+            background-color: #2a2a2a;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 0 20px;
+        }
+
+        .meta-progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.5s ease-in-out;
+        }
+
+        #chartContainer {
+            max-width: 100%;
+            margin: 20px auto;
+        }
     </style>
 </head>
 <body>
@@ -86,7 +120,24 @@
         <button onclick="adicionarValor()">Adicionar</button>
         <button onclick="retirarValor()">Retirar</button>
         
+        <div class="meta-container">
+            <label for="meta">Defina sua meta de economia:</label>
+            <input type="number" id="meta" step="0.01" placeholder="Meta de economia">
+            <button onclick="definirMeta()">Definir Meta</button>
+        </div>
+
+        <div class="meta-progress">
+            <div id="metaProgressBar" class="meta-progress-bar" style="width: 0%;"></div>
+        </div>
+        <p id="metaStatus">Meta: R$ 0.00 | Progresso: 0%</p>
+        
+        <div id="chartContainer">
+            <canvas id="economiasChart"></canvas>
+        </div>
+
         <h2>Registros</h2>
+        <input type="date" id="filtroData">
+        <button onclick="filtrarPorData()">Filtrar por data</button>
         <table>
             <thead>
                 <tr>
@@ -101,24 +152,103 @@
         </table>
 
         <h2 class="total">Total Economizado: R$ <span id="total">0.00</span></h2>
+
         <div class="actions">
             <button onclick="baixarRelatorio()">Baixar Relatório em PDF</button>
+            <button onclick="baixarCSV()">Baixar CSV</button>
             <button onclick="limparTabela()">Limpar Tabela</button>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script>
-        // Recupera registros do localStorage
+        // Recupera registros e meta do localStorage
         let registros = JSON.parse(localStorage.getItem('registros')) || [];
+        let meta = parseFloat(localStorage.getItem('meta')) || 0;
         let total = registros.reduce((sum, registro) => sum + registro.valor, 0);
 
+        // Gráfico de Economias
+        let economiasChart;
+
+        // Inicializa o gráfico
+        function inicializarGrafico() {
+            const ctx = document.getElementById('economiasChart').getContext('2d');
+            
+            // Agrupa registros por data
+            const registrosPorData = {};
+            registros.forEach(registro => {
+                if (!registrosPorData[registro.data]) {
+                    registrosPorData[registro.data] = { entradas: 0, saidas: 0 };
+                }
+                
+                if (registro.valor > 0) {
+                    registrosPorData[registro.data].entradas += registro.valor;
+                } else {
+                    registrosPorData[registro.data].saidas += Math.abs(registro.valor);
+                }
+            });
+
+            const datas = Object.keys(registrosPorData);
+            const entradas = datas.map(data => registrosPorData[data].entradas);
+            const saidas = datas.map(data => registrosPorData[data].saidas);
+
+            economiasChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: datas,
+                    datasets: [
+                        {
+                            label: 'Entradas',
+                            data: entradas,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Saídas',
+                            data: saidas,
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Valor (R$)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Atualiza a barra de progresso da meta
+        function atualizarProgressoMeta() {
+            const metaStatusEl = document.getElementById('metaStatus');
+            const metaProgressBar = document.getElementById('metaProgressBar');
+
+            if (meta > 0) {
+                const progresso = Math.min((total / meta) * 100, 100);
+                metaProgressBar.style.width = `${progresso}%`;
+                metaStatusEl.textContent = `Meta: R$ ${meta.toFixed(2)} | Progresso: ${progresso.toFixed(2)}%`;
+            } else {
+                metaProgressBar.style.width = '0%';
+                metaStatusEl.textContent = 'Defina uma meta de economia';
+            }
+        }
+
         // Atualiza a tabela e o total
-        function atualizarInterface() {
+        function atualizarInterface(registrosFiltrados = registros) {
             const tabela = document.getElementById('tabelaRegistros');
             const totalSpan = document.getElementById('total');
             tabela.innerHTML = '';
-            registros.forEach(registro => {
+            registrosFiltrados.forEach(registro => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${registro.data}</td>
@@ -128,25 +258,30 @@
                 tabela.appendChild(row);
             });
             totalSpan.textContent = total.toFixed(2);
+
+            // Atualiza gráfico
+            if (economiasChart) {
+                economiasChart.destroy();
+            }
+            inicializarGrafico();
+
+            // Atualiza progresso da meta
+            atualizarProgressoMeta();
         }
 
         // Adiciona novo valor
         function adicionarValor() {
             const valorInput = document.getElementById('valor');
             const valor = parseFloat(valorInput.value);
-            if (isNaN(valor) || valor <= 0) {
-                alert('Por favor, insira um valor válido.');
-                return;
-            }
+            if (!validarValor(valor)) return;
 
             const data = new Date().toLocaleDateString('pt-BR');
             registros.push({ data, tipo: 'Adicionado', valor });
             total += valor;
-
-            // Salva no localStorage
             localStorage.setItem('registros', JSON.stringify(registros));
 
-            // Atualiza interface
+            exibirNotificacao("Adicionado", valor);
+
             valorInput.value = '';
             atualizarInterface();
         }
@@ -155,10 +290,7 @@
         function retirarValor() {
             const valorInput = document.getElementById('valor');
             const valor = parseFloat(valorInput.value);
-            if (isNaN(valor) || valor <= 0) {
-                alert('Por favor, insira um valor válido.');
-                return;
-            }
+            if (!validarValor(valor)) return;
             if (valor > total) {
                 alert('Saldo insuficiente.');
                 return;
@@ -167,13 +299,42 @@
             const data = new Date().toLocaleDateString('pt-BR');
             registros.push({ data, tipo: 'Retirado', valor: -valor });
             total -= valor;
-
-            // Salva no localStorage
             localStorage.setItem('registros', JSON.stringify(registros));
 
-            // Atualiza interface
+            exibirNotificacao("Retirado", valor);
+
             valorInput.value = '';
             atualizarInterface();
+        }
+
+        // Valida valor inserido
+        function validarValor(valor) {
+            if (isNaN(valor)) {
+                alert("O valor deve ser um número válido.");
+                return false;
+            }
+            if (valor <= 0) {
+                alert("O valor deve ser maior que zero.");
+                return false;
+            }
+            return true;
+        }
+
+        // Filtra por data
+        function filtrarPorData() {
+            const filtroData = document.getElementById('filtroData').value;
+            if (!filtroData) return atualizarInterface();
+            const registrosFiltrados = registros.filter(registro => registro.data === filtroData);
+            atualizarInterface(registrosFiltrados);
+        }
+
+        // Exibe notificações
+        function exibirNotificacao(tipo, valor) {
+            const notificacao = document.createElement("div");
+            notificacao.classList.add("notificacao");
+            notificacao.textContent = `${tipo}: R$ ${valor.toFixed(2)}`;
+            document.body.appendChild(notificacao);
+            setTimeout(() => notificacao.remove(), 3000);
         }
 
         // Limpa todos os registros
@@ -181,20 +342,15 @@
             if (confirm('Tem certeza que deseja limpar todos os registros?')) {
                 registros = [];
                 total = 0;
-
-                // Remove os dados do localStorage
                 localStorage.removeItem('registros');
-
-                // Atualiza interface
                 atualizarInterface();
             }
         }
 
-        // Gera o relatório em PDF
+        // Baixar relatório em PDF
         function baixarRelatorio() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-
             doc.setFontSize(16);
             doc.text('Relatório de Economia', 10, 10);
             doc.setFontSize(12);
@@ -206,13 +362,41 @@
             });
 
             doc.text(`\nTotal Economizado: R$ ${total.toFixed(2)}`, 10, linha + 10);
-
-            // Baixa o arquivo
+            doc.text(`Meta de Economia: R$ ${meta.toFixed(2)}`, 10, linha + 20);
             doc.save('relatorio_economia.pdf');
         }
 
-        // Inicializa a interface
+        // Baixar relatório em CSV
+        function baixarCSV() {
+            let csv = "Data,Descrição,Valor (R$)\n";
+            registros.forEach(registro => {
+                csv += `${registro.data},${registro.tipo},${registro.valor.toFixed(2)}\n`;
+            });
+
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "registros_economia.csv";
+            link.click();
+        }
+
+        // Definir meta de economia
+        function definirMeta() {
+            const novaMeta = parseFloat(document.getElementById('meta').value);
+            if (novaMeta && novaMeta > 0) {
+                meta = novaMeta;
+                localStorage.setItem('meta', meta);
+                atualizarProgressoMeta();
+                alert(`Meta definida: R$ ${meta.toFixed(2)}`);
+            } else {
+                alert('Por favor, insira um valor válido para a meta.');
+            }
+        }
+
+        // Atualiza a interface inicialmente
         atualizarInterface();
+        atualizarProgressoMeta();
+        inicializarGrafico();
     </script>
 </body>
 </html>
