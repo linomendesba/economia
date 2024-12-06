@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Economia</title>
+    <style>
+      body {
+        background-color: #121212; /* Fundo preto suave */
+        color: #e0e0e0; /* Texto em cinza claro para contraste */
+        font-family: 'Arial', sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+    }
+    
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #1c1c1c; /* Fundo cinza escuro para o contêiner */
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); /* Sombra discreta */
+    }
+    
+    input, button {
+        padding: 10px 20px;
+        margin: 10px;
+        font-size: 16px;
+        border: 1px solid #333; /* Bordas discretas */
+        border-radius: 4px;
+        background-color: #2a2a2a; /* Fundo cinza médio */
+        color: #e0e0e0; /* Texto claro */
+    }
+    
+    button {
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    button:hover {
+        background-color: #444; /* Fundo cinza mais claro ao passar o mouse */
+    }
+    
+    table {
+        margin: 20px auto;
+        border-collapse: collapse;
+        width: 100%;
+        background-color: #1c1c1c; /* Fundo da tabela */
+    }
+    
+    th, td {
+        border: 1px solid #333; /* Bordas escuras */
+        padding: 12px;
+        text-align: center;
+    }
+    
+    th {
+        background-color: #2a2a2a; /* Fundo mais escuro para o cabeçalho */
+        font-weight: bold;
+    }
+    
+    .actions {
+        margin-top: 20px;
+    }
+    
+    h1, h2 {
+        color: #ffffff; /* Títulos em branco para destaque */
+    }
+    
+    .total {
+        font-size: 20px;
+        margin-top: 20px;
+        font-weight: bold;
+        color: #b3b3b3; /* Destaque para o total */
+    }
+    
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Controle de Economia</h1>
+        <p>Adicione ou retire valores do seu saldo:</p>
+        <input type="number" id="valor" placeholder="Digite o valor" step="0.01">
+        <button onclick="adicionarValor()">Adicionar</button>
+        <button onclick="retirarValor()">Retirar</button>
+        
+        <h2>Registros</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Valor (R$)</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaRegistros">
+                <!-- Registros aparecerão aqui -->
+            </tbody>
+        </table>
+
+        <h2 class="total">Total Economizado: R$ <span id="total">0.00</span></h2>
+        <div class="actions">
+            <button onclick="baixarRelatorio()">Baixar Relatório em PDF</button>
+            <button onclick="limparTabela()">Limpar Tabela</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+        // Recupera registros do localStorage
+        let registros = JSON.parse(localStorage.getItem('registros')) || [];
+        let total = registros.reduce((sum, registro) => sum + registro.valor, 0);
+
+        // Atualiza a tabela e o total
+        function atualizarInterface() {
+            const tabela = document.getElementById('tabelaRegistros');
+            const totalSpan = document.getElementById('total');
+            tabela.innerHTML = '';
+            registros.forEach(registro => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${registro.data}</td>
+                    <td>${registro.tipo}</td>
+                    <td>R$ ${registro.valor.toFixed(2)}</td>
+                `;
+                tabela.appendChild(row);
+            });
+            totalSpan.textContent = total.toFixed(2);
+        }
+
+        // Adiciona novo valor
+        function adicionarValor() {
+            const valorInput = document.getElementById('valor');
+            const valor = parseFloat(valorInput.value);
+            if (isNaN(valor) || valor <= 0) {
+                alert('Por favor, insira um valor válido.');
+                return;
+            }
+
+            const data = new Date().toLocaleDateString('pt-BR');
+            registros.push({ data, tipo: 'Adicionado', valor });
+            total += valor;
+
+            // Salva no localStorage
+            localStorage.setItem('registros', JSON.stringify(registros));
+
+            // Atualiza interface
+            valorInput.value = '';
+            atualizarInterface();
+        }
+
+        // Retira valor
+        function retirarValor() {
+            const valorInput = document.getElementById('valor');
+            const valor = parseFloat(valorInput.value);
+            if (isNaN(valor) || valor <= 0) {
+                alert('Por favor, insira um valor válido.');
+                return;
+            }
+            if (valor > total) {
+                alert('Saldo insuficiente.');
+                return;
+            }
+
+            const data = new Date().toLocaleDateString('pt-BR');
+            registros.push({ data, tipo: 'Retirado', valor: -valor });
+            total -= valor;
+
+            // Salva no localStorage
+            localStorage.setItem('registros', JSON.stringify(registros));
+
+            // Atualiza interface
+            valorInput.value = '';
+            atualizarInterface();
+        }
+
+        // Limpa todos os registros
+        function limparTabela() {
+            if (confirm('Tem certeza que deseja limpar todos os registros?')) {
+                registros = [];
+                total = 0;
+
+                // Remove os dados do localStorage
+                localStorage.removeItem('registros');
+
+                // Atualiza interface
+                atualizarInterface();
+            }
+        }
+
+        // Gera o relatório em PDF
+        function baixarRelatorio() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(16);
+            doc.text('Relatório de Economia', 10, 10);
+            doc.setFontSize(12);
+
+            let linha = 20;
+            registros.forEach(registro => {
+                doc.text(`${registro.data} - ${registro.tipo}: R$ ${registro.valor.toFixed(2)}`, 10, linha);
+                linha += 10;
+            });
+
+            doc.text(`\nTotal Economizado: R$ ${total.toFixed(2)}`, 10, linha + 10);
+
+            // Baixa o arquivo
+            doc.save('relatorio_economia.pdf');
+        }
+
+        // Inicializa a interface
+        atualizarInterface();
+    </script>
+</body>
+</html>
